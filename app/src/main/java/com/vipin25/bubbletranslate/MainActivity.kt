@@ -300,7 +300,13 @@ class MainActivity : ComponentActivity() {
 
             Button(
                 onClick = {
-                    if (bubbleRunning) {
+                    if (apiKey.isBlank()) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "请先填写 ${s.apiKeyLabel} 并点「保存设置」",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else if (bubbleRunning) {
                         stopService(Intent(this@MainActivity, BubbleOverlayService::class.java))
                         bubbleRunning = false
                     } else if (!Settings.canDrawOverlays(this@MainActivity)) {

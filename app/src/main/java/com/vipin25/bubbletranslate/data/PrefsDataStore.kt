@@ -23,6 +23,17 @@ class PrefsDataStore(private val context: Context) {
     private val AUTO_TRANSLATE = booleanPreferencesKey("auto_translate")
     private val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
     private val BALL_SCALE = floatPreferencesKey("ball_scale")
+    private val LOCKED_TARGET = stringPreferencesKey("locked_target_lang")
+
+    /** 面板里锁定的目标语言；空串 = 自动识别对方语言。 */
+    val lockedTargetLang: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[LOCKED_TARGET] ?: "" }
+
+    suspend fun setLockedTargetLang(tag: String) {
+        context.dataStore.edit { preferences ->
+            preferences[LOCKED_TARGET] = tag
+        }
+    }
 
     /** 悬浮球/角色的大小倍率：0.8 小、1.0 中、1.2 大。 */
     val ballScale: Flow<Float> = context.dataStore.data

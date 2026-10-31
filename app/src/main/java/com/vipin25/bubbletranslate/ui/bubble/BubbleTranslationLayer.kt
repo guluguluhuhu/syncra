@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vipin25.bubbletranslate.domain.model.ScreenBubble
@@ -24,15 +25,29 @@ import com.vipin25.bubbletranslate.domain.model.ScreenBubble
  * 整个层是 NOT_TOUCHABLE 的，点击穿透到下面的 App。
  */
 @Composable
-fun BubbleTranslationLayer(items: List<ScreenBubble>) {
+fun BubbleTranslationLayer(items: List<ScreenBubble>, limitBottomPx: Int = Int.MAX_VALUE) {
     val density = LocalDensity.current
 
     Box(modifier = Modifier.fillMaxSize()) {
         items.forEach { item ->
             val x = with(density) { item.left.toDp() }
-            val y = with(density) { item.top.toDp() }
             val originW = with(density) { (item.right - item.left).toDp() }
             val originH = with(density) { (item.bottom - item.top).toDp() }
+
+            // 往上提：保证译文框底部不越过 limitBottomPx（输入框上沿），顶部也至少留出一点
+            val yPx = if (limitBottomPx == Int.MAX_VALUE) {
+                item.top
+            } else {
+                minOf(item.top, limitBottomPx - 80)
+            }
+            val y = with(density) { yPx.toDp() }
+
+            // 高度上限：到 limitBottomPx 为止，超出部分裁掉（宁可截断也不挡输入框）
+            val maxHDp = if (limitBottomPx == Int.MAX_VALUE) {
+                Dp.Unspecified
+            } else {
+                with(density) { (limitBottomPx - yPx).coerceAtLeast(24).toDp() }
+            }
 
             // 限制最大宽度，避免短消息被拉成长条；最小 120dp 保证能放下字
             val w = originW.coerceIn(120.dp, 300.dp)
@@ -41,7 +56,13 @@ fun BubbleTranslationLayer(items: List<ScreenBubble>) {
                 modifier = Modifier
                     .offset(x = x, y = y)
                     .width(w)
-                    .heightIn(min = originH)
+                    .then(
+                        if (maxHDp == Dp.Unspecified) {
+                            Modifier.heightIn(min = originH)
+                        } else {
+                            Modifier.heightIn(min = minOf(originH, maxHDp), max = maxHDp)
+                        }
+                    )
                     .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {

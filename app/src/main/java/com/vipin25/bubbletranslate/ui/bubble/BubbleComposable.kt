@@ -22,6 +22,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -44,6 +47,9 @@ fun BubbleComposable(
     showSettings: Boolean = false,
     autoTranslate: Boolean = false,
     ballScale: Float = 1f,
+    lockedTargetLang: String = "",
+    onLockedTargetChange: (String) -> Unit = {},
+    onTranslateInputNow: () -> Unit = {},
     onToggleAutoTranslate: () -> Unit = {},
     onTranslateNow: () -> Unit = {},
     onCloseSettings: () -> Unit = {},
@@ -55,6 +61,9 @@ fun BubbleComposable(
             autoTranslate = autoTranslate,
             onToggle = onToggleAutoTranslate,
             onTranslateNow = onTranslateNow,
+            onTranslateInputNow = onTranslateInputNow,
+            lockedTargetLang = lockedTargetLang,
+            onLockedTargetChange = onLockedTargetChange,
             onClose = onCloseSettings
         )
         return
@@ -150,10 +159,15 @@ private fun SettingsPanel(
     autoTranslate: Boolean,
     onToggle: () -> Unit,
     onTranslateNow: () -> Unit,
+    onTranslateInputNow: () -> Unit,
+    lockedTargetLang: String,
+    onLockedTargetChange: (String) -> Unit,
     onClose: () -> Unit
 ) {
+    var langExpanded by remember { mutableStateOf(false) }
+
     androidx.compose.material3.Card(
-        modifier = Modifier.width(176.dp),
+        modifier = Modifier.width(200.dp),
         shape = RoundedCornerShape(14.dp),
         elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
@@ -184,6 +198,38 @@ private fun SettingsPanel(
                 Text("立即翻译一次", fontSize = 12.sp)
             }
 
+            // 目标语言下拉：锁死后“翻译输入框”就固定用它
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("目标语言", fontSize = 12.sp, modifier = Modifier.weight(1f))
+                Box {
+                    androidx.compose.material3.TextButton(onClick = { langExpanded = true }) {
+                        Text(langLabel(lockedTargetLang), fontSize = 12.sp)
+                    }
+                    androidx.compose.material3.DropdownMenu(
+                        expanded = langExpanded,
+                        onDismissRequest = { langExpanded = false }
+                    ) {
+                        langOptions.forEach { (tag, label) ->
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    onLockedTargetChange(tag)
+                                    langExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            androidx.compose.material3.Button(
+                onClick = onTranslateInputNow,
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp)
+            ) {
+                Text("翻译输入框", fontSize = 12.sp)
+            }
+
             androidx.compose.material3.TextButton(
                 onClick = onClose,
                 modifier = Modifier.fillMaxWidth()
@@ -193,6 +239,19 @@ private fun SettingsPanel(
         }
     }
 }
+
+private val langOptions = listOf(
+    "" to "自动",
+    "en" to "English",
+    "ja" to "日本語",
+    "ko" to "한국어",
+    "ru" to "Русский",
+    "ar" to "العربية",
+    "zh" to "中文"
+)
+
+private fun langLabel(tag: String): String =
+    langOptions.firstOrNull { it.first == tag }?.second ?: "自动"
 
 @Composable
 fun ShieldScanningIndicator() {

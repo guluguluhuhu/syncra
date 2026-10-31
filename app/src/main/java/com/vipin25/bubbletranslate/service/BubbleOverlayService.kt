@@ -53,9 +53,78 @@ class BubbleOverlayService : Service() {
     /** 角色大小倍率（0.8 / 1.0 / 1.2）。 */
     private val ballScaleState = mutableStateOf(1f)
 
+    /** 面板里锁定的目标语言；空串 = 自动识别。 */
+    private val lockedTargetLangState = mutableStateOf("")
+
+    /** 键盘是否可见：可见时译文层让位给输入框，收起后显示完整译文。 */
+    private val keyboardState = mutableStateOf(false)
+
     private val prefs by lazy { PrefsDataStore(applicationContext) }
     private var downAt = 0L
     private var lastClickAt = 0L
+
+    /** 悬浮球自己的触摸处理：拖动 / 点击 / 吸附。面板或卡片打开时直接返回 false。 */
+    private val ballTouchListener = android.view.View.OnTouchListener { view, event ->
+        val s = currentUiState.value
+        val isCard = s is TranslationUiState.Success ||
+            s is TranslationUiState.Error ||
+            s is TranslationUiState.ScreenTranslation ||
+            s is TranslationUiState.LinkSafe ||
+            s is TranslationUiState.LinkSuspicious ||
+            s is TranslationUiState.LinkDangerous
+
+        if (showSettingsState.value || isCard) {
+            false
+        } else when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                initialX = params!!.x
+                initialY = params!!.y
+                initialTouchX = event.rawX
+                initialTouchY = event.rawY
+                downAt = android.os.SystemClock.uptimeMillis()
+                true
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val dx = event.rawX - initialTouchX
+                val dy = event.rawY - initialTouchY
+                params!!.x = initialX + dx.toInt()
+                params!!.y = initialY + dy.toInt()
+                windowManager.updateViewLayout(composeView, params)
+                if (snapSideState.value != 0) snapSideState.value = 0
+                true
+            }
+            MotionEvent.ACTION_UP -> {
+                val dx = event.rawX - initialTouchX
+                val dy = event.rawY - initialTouchY
+                if (abs(dx) < 10 && abs(dy) < 10) {
+                    snapSideState.value = 0
+                    val vm = DependencyProvider.viewModel(applicationContext)
+                    val held = android.os.SystemClock.uptimeMillis() - downAt
+                    if (held > 450) {
+                        vm.clearScreenTranslation()
+                        showSettingsState.value = false
+                    } else {
+                        val now = android.os.SystemClock.uptimeMillis()
+                        if (now - lastClickAt < 500) {
+                            view.performClick()
+                        } else {
+                            lastClickAt = now
+                            // 打开面板前先抓一次输入框内容：面板一开，部分 App（微信）的输入框就失焦了
+                            if (!showSettingsState.value) {
+                                TranslationAccessibilityService.instance?.captureFocusedInput()
+                            }
+                            showSettingsState.value = !showSettingsState.value
+                        }
+                    }
+                    view.performClick()
+                } else {
+                    snapToEdge()
+                }
+                true
+            }
+            else -> false
+        }
+    }
 
     private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
@@ -120,6 +189,18 @@ class BubbleOverlayService : Service() {
         }
 
         overlayLifecycleOwner.lifecycleScope.launch {
+            prefs.lockedTargetLang.collect { lang ->
+                lockedTargetLangState.value = lang
+            }
+        }
+
+        overlayLifecycleOwner.lifecycleScope.launch {
+            TranslationAccessibilityService.keyboardVisibleFlow.collect { visible ->
+                keyboardState.value = visible
+            }
+        }
+
+        overlayLifecycleOwner.lifecycleScope.launch {
             DependencyProvider.viewModel(applicationContext).uiState.collect { state ->
                 currentUiState.value = state
                 if (state is TranslationUiState.ScreenBubbles) {
@@ -144,6 +225,32 @@ class BubbleOverlayService : Service() {
                         showSettings = showSettingsState.value,
                         autoTranslate = autoTranslateState.value,
                         ballScale = ballScaleState.value,
+                        lockedTargetLang = lockedTargetLangState.value,
+                        onLockedTargetChange = { tag ->
+                            lockedTargetLangState.value = tag
+                            overlayLifecycleOwner.lifecycleScope.launch { prefs.setLockedTargetLang(tag) }
+                        },
+                        onTranslateInputNow = {
+                            showSettingsState.value = false
+                            val svc = TranslationAccessibilityService.instance
+                            if (svc == null) {
+                                android.widget.Toast.makeText(
+                                    applicationContext,
+                                    "无障碍服务没连上，请去设置里关掉再打开一次",
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                val input = svc.readFocusedInputText()
+                                android.widget.Toast.makeText(
+                                    applicationContext,
+                                    if (input.isNullOrBlank()) "没读到输入框内容" else "开始翻译输入框",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                                val vm = DependencyProvider.viewModel(applicationContext)
+                                // 目标语言统一走 ViewModel 里的 lockedTargetLang -> 对方语言 -> 英文
+                                vm.translateInput(silent = false)
+                            }
+                        },
                         onToggleAutoTranslate = {
                             val newVal = !autoTranslateState.value
                             autoTranslateState.value = newVal
@@ -193,66 +300,12 @@ class BubbleOverlayService : Service() {
             y = 100
         }
 
-        composeView.setOnTouchListener { view, event ->
-            // 面板或卡片显示时，把触摸整体交给 Compose，否则里面的开关/按钮点不动
-            val s = currentUiState.value
-            val isCard = s is TranslationUiState.Success ||
-                s is TranslationUiState.Error ||
-                s is TranslationUiState.ScreenTranslation ||
-                s is TranslationUiState.LinkSafe ||
-                s is TranslationUiState.LinkSuspicious ||
-                s is TranslationUiState.LinkDangerous
-            if (showSettingsState.value || isCard) {
-                return@setOnTouchListener false
-            }
+        composeView.setOnTouchListener(ballTouchListener)
 
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    initialX = params!!.x
-                    initialY = params!!.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    downAt = android.os.SystemClock.uptimeMillis()
-                    true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    val dx = event.rawX - initialTouchX
-                    val dy = event.rawY - initialTouchY
-                    params!!.x = initialX + dx.toInt()
-                    params!!.y = initialY + dy.toInt()
-                    windowManager.updateViewLayout(composeView, params)
-                    // 一拖就恢复全身
-                    if (snapSideState.value != 0) snapSideState.value = 0
-                    true
-                }
-                MotionEvent.ACTION_UP -> {
-                    val dx = event.rawX - initialTouchX
-                    val dy = event.rawY - initialTouchY
-                    if (abs(dx) < 10 && abs(dy) < 10) {
-                        snapSideState.value = 0
-                        val vm = DependencyProvider.viewModel(applicationContext)
-                        val held = android.os.SystemClock.uptimeMillis() - downAt
-                        if (held > 450) {
-                            // 长按悬浮球 = 手动关掉译文层
-                            vm.clearScreenTranslation()
-                            showSettingsState.value = false
-                        } else {
-                            val now = android.os.SystemClock.uptimeMillis()
-                            if (now - lastClickAt < 500) {
-                                view.performClick()
-                            } else {
-                                lastClickAt = now
-                                // 点一下 = 打开/收起设置小面板（自动翻译开关在这里）
-                                showSettingsState.value = !showSettingsState.value
-                            }
-                        }
-                        view.performClick()
-                    } else {
-                        snapToEdge()
-                    }
-                    true
-                }
-                else -> false
+        // 面板打开时彻底摘掉外层触摸监听，保证按钮/开关能被 Compose 正常点到
+        overlayLifecycleOwner.lifecycleScope.launch {
+            androidx.compose.runtime.snapshotFlow { showSettingsState.value }.collect { open ->
+                composeView.setOnTouchListener(if (open) null else ballTouchListener)
             }
         }
 
@@ -267,7 +320,12 @@ class BubbleOverlayService : Service() {
         val view = ComposeView(this).apply {
             setContent {
                 BubbleTranslateTheme {
-                    BubbleTranslationLayer(items = bubbleItems.value)
+                    BubbleTranslationLayer(
+                        items = bubbleItems.value,
+                        // 键盘弹起：限制在 82%，给输入框让位；键盘收起：放宽到 96%，显示完整译文
+                        limitBottomPx = (resources.displayMetrics.heightPixels *
+                            if (keyboardState.value) 0.82f else 0.96f).toInt()
+                    )
                 }
             }
         }

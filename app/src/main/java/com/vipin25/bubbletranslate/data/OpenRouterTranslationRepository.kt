@@ -49,7 +49,7 @@ class OpenRouterTranslationRepository(
             }
             val model = prefs.model.first().ifBlank { PrefsDataStore.DEFAULT_MODEL }
             val body = buildRequestBody(text, targetLang, model)
-            Result.success(extractContent(post(ENDPOINT, body, key)))
+            Result.success(extractContent(post(ENDPOINT, body, key)).replace("<<<SEP>>>", " ").trim())
         } catch (e: Exception) {
             Result.failure(wrap(e))
         }
@@ -85,14 +85,14 @@ class OpenRouterTranslationRepository(
                 }
                 val body = JSONObject().apply {
                     put("model", model)
-                    put("temperature", 0.2)
+                    put("temperature", 0.0)
                     put("messages", messages)
                 }.toString()
 
                 val content = extractContent(post(ENDPOINT, body, key))
                 val parts = content.split(SEP)
                 if (parts.size == texts.size) {
-                    Result.success(parts.map { it.trim() })
+                    Result.success(parts.map { it.replace("<<<SEP>>>", " ").trim() })
                 } else {
                     // 模型没按分隔符返回 -> 退回逐条翻译
                     val out = ArrayList<String>(texts.size)
@@ -128,7 +128,7 @@ class OpenRouterTranslationRepository(
         }
         return JSONObject().apply {
             put("model", model)
-            put("temperature", 0.2)
+            put("temperature", 0.0)
             put("messages", messages)
         }.toString()
     }
@@ -160,8 +160,8 @@ class OpenRouterTranslationRepository(
         try {
             conn.requestMethod = "POST"
             conn.doOutput = true
-            conn.connectTimeout = 20_000
-            conn.readTimeout = 60_000
+            conn.connectTimeout = 10_000
+            conn.readTimeout = 15_000
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
             conn.setRequestProperty("Authorization", "Bearer $key")
             conn.setRequestProperty("HTTP-Referer", "https://github.com/guluguluhuhu/syncra")
