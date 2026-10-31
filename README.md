@@ -2,6 +2,11 @@
 
 A floating translator for Android that works on top of any app — including Twitter/X DMs, where text selection is not available.
 
+## Documentation
+
+- **[Full usage guide (Chinese, 中文使用攻略)](docs/USAGE.md)** — step-by-step install, permissions, model choice, troubleshooting, and the author's practical tips. Written for non-technical users, and structured so an AI assistant can answer user questions from the repo directly.
+- [中文说明](README.zh.md)
+
 ## Features
 
 - **Read-screen translation** — reads visible messages through the Accessibility API and draws the translation directly over the original text.
