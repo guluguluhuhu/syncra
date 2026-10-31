@@ -72,4 +72,6 @@ Apache-2.0，见 [LICENSE](LICENSE)。
 
 基于 [BubbleTranslate](https://github.com/vipinthakur25/bubble-translate)（作者 Vipin，Apache-2.0）改造。
 
+原版权声明和本项目修改说明见 [NOTICE](NOTICE)。
+
 角色形象为同人二创。本项目与 DeepSeek、X Corp 均无关联，也未获其背书。

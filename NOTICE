@@ -1,0 +1,31 @@
+Syncra
+Copyright 2026 Syncra contributors
+
+---------------------------------------------------------------------------
+This product is a derivative work of BubbleTranslate
+(https://github.com/vipinthakur25/bubble-translate),
+Copyright (c) Vipin, licensed under the Apache License, Version 2.0.
+
+A copy of the Apache License, Version 2.0 is retained in LICENSE.
+---------------------------------------------------------------------------
+
+Summary of modifications made by the Syncra project:
+
+- Rebranded the application from "BubbleTranslate" to "Syncra"
+  (new applicationId `com.syncra.app`, new launcher icon and mascot).
+- Removed the bundled on-device translation models (ML Kit) and the
+  associated Google Play Services dependencies.
+- Replaced translation with OpenRouter Chat Completions API calls;
+  the user supplies their own API key.
+- Rewrote the floating overlay UI (Compose), including the mascot
+  character, the settings panel, and the per-message translation layer.
+- Added incremental input translation, sentence-aware batching,
+  a whole-text manual translation button, and a locked target language.
+- Added a local translation cache with a one-tap "clear cache" action.
+- Added dark mode support, release signing configuration, and
+  retry/timeout handling for network requests.
+- Fixed a number of bugs in screen-text collection, input-box writing,
+  and overlay lifecycle.
+
+The original copyright notice above must be retained in redistributions,
+as required by Section 4 of the Apache License, Version 2.0.

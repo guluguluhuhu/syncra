@@ -70,5 +70,6 @@ Apache-2.0. See [LICENSE](LICENSE).
 ## Credits
 
 Based on [BubbleTranslate](https://github.com/vipinthakur25/bubble-translate) by Vipin (Apache-2.0).
+See [NOTICE](NOTICE) for the original copyright notice and a summary of the modifications made by this project.
 
 The mascot character is an original fan design. This project is not affiliated with, endorsed by, or sponsored by DeepSeek or X Corp.
