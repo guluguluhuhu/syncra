@@ -70,16 +70,15 @@ fun BubbleComposable(
     }
 
     val isOverlayCard = uiState is TranslationUiState.Success || uiState is TranslationUiState.Error
-    val isLinkCard = uiState is TranslationUiState.LinkSafe || uiState is TranslationUiState.LinkSuspicious || uiState is TranslationUiState.LinkDangerous
     val isScreenCard = uiState is TranslationUiState.ScreenTranslation
 
-    if (isOverlayCard || isLinkCard || isScreenCard) {
+    if (isOverlayCard || isScreenCard) {
         if (isScreenCard) {
             ScreenTranslationCard(
                 items = (uiState as TranslationUiState.ScreenTranslation).items,
                 onDismiss = onDismiss
             )
-        } else if (isOverlayCard) {
+        } else {
             val translated = if (uiState is TranslationUiState.Success) uiState.translation else (uiState as TranslationUiState.Error).message
             val original = if (uiState is TranslationUiState.Success) uiState.originalText else ""
             TranslationCard(
@@ -88,8 +87,6 @@ fun BubbleComposable(
                 onDismiss = onDismiss,
                 onLanguageChange = onLanguageChange
             )
-        } else {
-            LinkShieldCard(uiState, onDismiss)
         }
     } else if (snapSide != 0) {
         // 吸附到屏幕边缘：只露出头，左侧镜像

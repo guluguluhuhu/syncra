@@ -15,24 +15,6 @@ sealed class TranslationUiState {
         val items: List<ScreenBubble>,
         val packageName: String? = null
     ) : TranslationUiState()
-
-    // ── LinkShield additions ────────────────────────
-    object LinkScanning : TranslationUiState()
-
-    data class LinkSafe(
-        val url: String,
-        val reasons: List<String>
-    ) : TranslationUiState()
-
-    data class LinkSuspicious(
-        val url: String,
-        val signals: List<RiskSignal>
-    ) : TranslationUiState()
-
-    data class LinkDangerous(
-        val url: String,
-        val signals: List<RiskSignal>
-    ) : TranslationUiState()
 }
 
 /** 一条消息在屏幕上的位置与译文。 */

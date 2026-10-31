@@ -68,10 +68,7 @@ class BubbleOverlayService : Service() {
         val s = currentUiState.value
         val isCard = s is TranslationUiState.Success ||
             s is TranslationUiState.Error ||
-            s is TranslationUiState.ScreenTranslation ||
-            s is TranslationUiState.LinkSafe ||
-            s is TranslationUiState.LinkSuspicious ||
-            s is TranslationUiState.LinkDangerous
+            s is TranslationUiState.ScreenTranslation
 
         if (showSettingsState.value || isCard) {
             false
@@ -413,9 +410,6 @@ class BubbleOverlayService : Service() {
             when (action) {
                 ACTION_TRANSLATE -> {
                     DependencyProvider.viewModel(applicationContext).translate(text)
-                }
-                ACTION_CHECK_LINK -> {
-                    DependencyProvider.viewModel(applicationContext).checkLink(text)
                 }
             }
         }

@@ -21,14 +21,11 @@ import kotlinx.coroutines.sync.withLock
 
 import com.vipin25.bubbletranslate.data.LanguageDetector
 import com.vipin25.bubbletranslate.data.TranslationCache
-import com.vipin25.bubbletranslate.data.NoOpLinkCheckRepository
 import com.vipin25.bubbletranslate.service.TranslationAccessibilityService
 
 @OptIn(FlowPreview::class)
 class TranslationViewModel(
     private val repository: TranslationRepository,
-    private val linkCheckRepo: LinkCheckRepository = NoOpLinkCheckRepository(),
-    private val urlDetector: UrlDetector = object : UrlDetector { override fun isWebUrl(text: String) = false },
     private val prefsDataStore: PrefsDataStore? = null // Nullable for tests
 ) : ViewModel() {
 
@@ -126,12 +123,6 @@ class TranslationViewModel(
     private suspend fun translateInternal(text: String) {
         if (text.isBlank()) {
             _uiState.value = TranslationUiState.Idle
-            return
-        }
-        
-        if (isUrl(text)) {
-            println("Routing to link check")
-            checkLink(text)
             return
         }
         
@@ -392,28 +383,6 @@ class TranslationViewModel(
                 }
             }
         }
-    }
-
-    fun checkLink(text: String) {
-        viewModelScope.launch {
-            _uiState.value = TranslationUiState.LinkScanning
-            val result = linkCheckRepo.checkUrl(text)
-            _uiState.value = when (result.verdict) {
-                com.vipin25.bubbletranslate.domain.model.Verdict.SAFE -> TranslationUiState.LinkSafe(
-                    result.url,
-                    result.signals.map { it.detail }
-                )
-                com.vipin25.bubbletranslate.domain.model.Verdict.SUSPICIOUS -> TranslationUiState.LinkSuspicious(result.url, result.signals)
-                com.vipin25.bubbletranslate.domain.model.Verdict.PHISHING -> TranslationUiState.LinkDangerous(result.url, result.signals)
-            }
-        }
-    }
-
-    private fun isUrl(text: String): Boolean {
-        val trimmed = text.trim()
-        if (trimmed.length < 10) return false
-        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) return false
-        return urlDetector.isWebUrl(trimmed)
     }
 
     /**

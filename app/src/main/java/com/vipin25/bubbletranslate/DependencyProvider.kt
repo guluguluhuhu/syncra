@@ -28,8 +28,6 @@ object DependencyProvider {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return TranslationViewModel(
                     repository = OpenRouterTranslationRepository(prefsDataStore!!),
-                    linkCheckRepo = com.vipin25.bubbletranslate.data.HeuristicLinkCheckRepository(),
-                    urlDetector = com.vipin25.bubbletranslate.data.AndroidUrlDetector(),
                     prefsDataStore = prefsDataStore!!
                 ) as T
             }
