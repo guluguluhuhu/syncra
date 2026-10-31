@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -42,6 +43,7 @@ fun BubbleComposable(
     snapSide: Int = 0,
     showSettings: Boolean = false,
     autoTranslate: Boolean = false,
+    ballScale: Float = 1f,
     onToggleAutoTranslate: () -> Unit = {},
     onTranslateNow: () -> Unit = {},
     onCloseSettings: () -> Unit = {},
@@ -87,7 +89,8 @@ fun BubbleComposable(
             contentDescription = "DeepSeek whale girl",
             contentScale = ContentScale.Fit,
             modifier = Modifier
-                .size(96.dp)
+                .size((96 * ballScale).dp)
+                .alpha(0.92f)
                 .graphicsLayer { scaleX = if (snapSide < 0) -1f else 1f }
         )
     } else {
@@ -102,7 +105,7 @@ fun BubbleComposable(
             label = "bobY"
         )
         val ballModifier = Modifier
-            .size(112.dp)
+            .size((112 * ballScale).dp)
             .offset(y = bob.dp)
 
         if (uiState is TranslationUiState.Loading) {

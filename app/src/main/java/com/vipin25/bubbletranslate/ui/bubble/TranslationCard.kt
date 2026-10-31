@@ -48,7 +48,7 @@ fun TranslationCard(
                 Text(
                     text = "对方语言",
                     modifier = Modifier
-                        .background(Color.LightGray, RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
                         .clickable { showBottomSheet = !showBottomSheet }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall
@@ -97,11 +97,11 @@ fun TranslationCard(
                 Text(
                     text = originalText,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.DarkGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
                 )
                 
-                Divider(color = Color.LightGray, thickness = 1.dp)
+                Divider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
 
                 Text(
                     text = "译文",

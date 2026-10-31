@@ -49,6 +49,14 @@ object TranslationCache {
 
     fun size(): Int = map.size
 
+    /** 清空全部翻译缓存（内存 + 磁盘），防止聊天记录留在本地。 */
+    @Synchronized
+    fun clear() {
+        map.clear()
+        dirty = true
+        saveNow()
+    }
+
     @Synchronized
     private fun saveNow() {
         if (!dirty) return

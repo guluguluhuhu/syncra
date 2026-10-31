@@ -56,6 +56,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.vipin25.bubbletranslate.data.OpenRouterModel
 import com.vipin25.bubbletranslate.data.OpenRouterModelsRepository
 import com.vipin25.bubbletranslate.data.PrefsDataStore
+import com.vipin25.bubbletranslate.data.TranslationCache
 import com.vipin25.bubbletranslate.data.UiLanguage
 import com.vipin25.bubbletranslate.service.BubbleOverlayService
 import com.vipin25.bubbletranslate.service.TranslationAccessibilityService
@@ -107,6 +108,8 @@ class MainActivity : ComponentActivity() {
         var bubbleRunning by remember { mutableStateOf(BubbleOverlayService.isRunning) }
         var autoTranslate by remember { mutableStateOf(false) }
         var showOnboarding by remember { mutableStateOf(false) }
+        var cacheCount by remember { mutableStateOf(0) }
+        var ballScale by remember { mutableStateOf(1f) }
 
         val s: UiStrings = remember(nativeLang) { Strings.of(nativeLang) }
 
@@ -152,6 +155,9 @@ class MainActivity : ComponentActivity() {
             nativeLang = UiLanguage.fromTag(prefs.nativeLanguage.first())
             autoTranslate = prefs.autoTranslate.first()
             showOnboarding = !prefs.onboardingDone.first()
+            TranslationCache.init(applicationContext)
+            cacheCount = TranslationCache.size()
+            ballScale = prefs.ballScale.first()
             loadModels(force = false)
         }
 
@@ -338,6 +344,44 @@ class MainActivity : ComponentActivity() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            // ── 悬浮球大小 ──
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = s.ballSize,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                listOf(
+                    0.8f to s.small,
+                    1.0f to s.medium,
+                    1.2f to s.large
+                ).forEach { (value, label) ->
+                    TextButton(onClick = {
+                        ballScale = value
+                        scope.launch { prefs.setBallScale(value) }
+                    }) {
+                        Text(
+                            text = label,
+                            fontWeight = if (ballScale == value) FontWeight.Bold else FontWeight.Normal,
+                            color = if (ballScale == value) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Button(
+                onClick = {
+                    TranslationCache.clear()
+                    cacheCount = 0
+                    Toast.makeText(this@MainActivity, s.cacheCleared, Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("${s.clearCache}（$cacheCount）") }
         }
 
         if (showModelDialog) {

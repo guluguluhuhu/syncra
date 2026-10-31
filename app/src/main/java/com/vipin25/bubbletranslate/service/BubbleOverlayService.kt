@@ -22,6 +22,7 @@ import com.vipin25.bubbletranslate.domain.model.ScreenBubble
 import com.vipin25.bubbletranslate.domain.model.TranslationUiState
 import com.vipin25.bubbletranslate.ui.bubble.BubbleComposable
 import com.vipin25.bubbletranslate.ui.bubble.BubbleTranslationLayer
+import com.vipin25.bubbletranslate.ui.theme.BubbleTranslateTheme
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import android.app.NotificationChannel
@@ -48,6 +49,9 @@ class BubbleOverlayService : Service() {
 
     /** 自动翻译开关的镜像（真正的值在 prefs）。 */
     private val autoTranslateState = mutableStateOf(false)
+
+    /** 角色大小倍率（0.8 / 1.0 / 1.2）。 */
+    private val ballScaleState = mutableStateOf(1f)
 
     private val prefs by lazy { PrefsDataStore(applicationContext) }
     private var downAt = 0L
@@ -110,6 +114,12 @@ class BubbleOverlayService : Service() {
         }
 
         overlayLifecycleOwner.lifecycleScope.launch {
+            prefs.ballScale.collect { scale ->
+                ballScaleState.value = scale
+            }
+        }
+
+        overlayLifecycleOwner.lifecycleScope.launch {
             DependencyProvider.viewModel(applicationContext).uiState.collect { state ->
                 currentUiState.value = state
                 if (state is TranslationUiState.ScreenBubbles) {
@@ -127,33 +137,36 @@ class BubbleOverlayService : Service() {
         
         composeView = ComposeView(this).apply {
             setContent {
-                BubbleComposable(
-                    uiState = currentUiState.value,
-                    snapSide = snapSideState.value,
-                    showSettings = showSettingsState.value,
-                    autoTranslate = autoTranslateState.value,
-                    onToggleAutoTranslate = {
-                        val newVal = !autoTranslateState.value
-                        autoTranslateState.value = newVal
-                        overlayLifecycleOwner.lifecycleScope.launch { prefs.setAutoTranslate(newVal) }
-                        if (!newVal) {
-                            DependencyProvider.viewModel(applicationContext).clearScreenTranslation()
+                BubbleTranslateTheme {
+                    BubbleComposable(
+                        uiState = currentUiState.value,
+                        snapSide = snapSideState.value,
+                        showSettings = showSettingsState.value,
+                        autoTranslate = autoTranslateState.value,
+                        ballScale = ballScaleState.value,
+                        onToggleAutoTranslate = {
+                            val newVal = !autoTranslateState.value
+                            autoTranslateState.value = newVal
+                            overlayLifecycleOwner.lifecycleScope.launch { prefs.setAutoTranslate(newVal) }
+                            if (!newVal) {
+                                DependencyProvider.viewModel(applicationContext).clearScreenTranslation()
+                            }
+                        },
+                        onTranslateNow = {
+                            showSettingsState.value = false
+                            TranslationAccessibilityService.instance?.disarmAutoInput()
+                            val vm = DependencyProvider.viewModel(applicationContext)
+                            val input = TranslationAccessibilityService.instance?.readFocusedInputText()
+                            if (!input.isNullOrBlank()) vm.translateInput(silent = true)
+                            vm.translateScreen()
+                        },
+                        onCloseSettings = { showSettingsState.value = false },
+                        onDismiss = { DependencyProvider.viewModel(applicationContext).dismiss() },
+                        onLanguageChange = { newLang ->
+                            DependencyProvider.viewModel(applicationContext).setLanguage(newLang)
                         }
-                    },
-                    onTranslateNow = {
-                        showSettingsState.value = false
-                        TranslationAccessibilityService.instance?.disarmAutoInput()
-                        val vm = DependencyProvider.viewModel(applicationContext)
-                        val input = TranslationAccessibilityService.instance?.readFocusedInputText()
-                        if (!input.isNullOrBlank()) vm.translateInput(silent = true)
-                        vm.translateScreen()
-                    },
-                    onCloseSettings = { showSettingsState.value = false },
-                    onDismiss = { DependencyProvider.viewModel(applicationContext).dismiss() },
-                    onLanguageChange = { newLang ->
-                        DependencyProvider.viewModel(applicationContext).setLanguage(newLang)
-                    }
-                )
+                    )
+                }
             }
         }
 
@@ -253,7 +266,9 @@ class BubbleOverlayService : Service() {
 
         val view = ComposeView(this).apply {
             setContent {
-                BubbleTranslationLayer(items = bubbleItems.value)
+                BubbleTranslateTheme {
+                    BubbleTranslationLayer(items = bubbleItems.value)
+                }
             }
         }
         view.setViewTreeLifecycleOwner(overlayLifecycleOwner)

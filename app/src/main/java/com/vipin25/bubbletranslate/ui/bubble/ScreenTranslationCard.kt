@@ -63,7 +63,7 @@ fun ScreenTranslationCard(
                         Text(
                             text = src,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 3,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -74,7 +74,7 @@ fun ScreenTranslationCard(
                         )
                     }
                     if (idx < items.lastIndex) {
-                        Divider(color = Color.LightGray.copy(alpha = 0.4f))
+                        Divider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
                 }
             }

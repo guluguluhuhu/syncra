@@ -45,7 +45,13 @@ data class UiStrings(
     val stepBubble: String,
     val gotIt: String,
     val copy: String,
-    val accNotConnected: String
+    val accNotConnected: String,
+    val clearCache: String,
+    val cacheCleared: String,
+    val ballSize: String,
+    val small: String,
+    val medium: String,
+    val large: String
 )
 
 object Strings {
@@ -99,7 +105,13 @@ object Strings {
         stepBubble = "启动悬浮球",
         gotIt = "知道了",
         copy = "复制",
-        accNotConnected = "无障碍已开启，但服务没连上：去设置里关掉再打开一次"
+        accNotConnected = "无障碍已开启，但服务没连上：去设置里关掉再打开一次",
+        clearCache = "清除翻译缓存",
+        cacheCleared = "翻译缓存已清除",
+        ballSize = "悬浮球大小",
+        small = "小",
+        medium = "中",
+        large = "大"
     )
 
     val EN = UiStrings(
@@ -144,7 +156,13 @@ object Strings {
         stepBubble = "Start the floating ball",
         gotIt = "Got it",
         copy = "Copy",
-        accNotConnected = "Accessibility is on but the service is not connected: toggle it off and on again"
+        accNotConnected = "Accessibility is on but the service is not connected: toggle it off and on again",
+        clearCache = "Clear translation cache",
+        cacheCleared = "Translation cache cleared",
+        ballSize = "Ball size",
+        small = "S",
+        medium = "M",
+        large = "L"
     )
 
     val JA = UiStrings(
@@ -189,7 +207,13 @@ object Strings {
         stepBubble = "フローティングボールを起動",
         gotIt = "了解",
         copy = "コピー",
-        accNotConnected = "アクセシビリティは有効ですがサービスが接続されていません：設定でオフ→オンし直してください"
+        accNotConnected = "アクセシビリティは有効ですがサービスが接続されていません：設定でオフ→オンし直してください",
+        clearCache = "翻訳キャッシュを消去",
+        cacheCleared = "翻訳キャッシュを消去しました",
+        ballSize = "ボールサイズ",
+        small = "小",
+        medium = "中",
+        large = "大"
     )
 
     val KO = UiStrings(
@@ -234,6 +258,12 @@ object Strings {
         stepBubble = "플로팅 볼 시작",
         gotIt = "확인",
         copy = "복사",
-        accNotConnected = "접근성은 켜져 있지만 서비스가 연결되지 않았습니다: 설정에서 껐다 켜 주세요"
+        accNotConnected = "접근성은 켜져 있지만 서비스가 연결되지 않았습니다: 설정에서 껐다 켜 주세요",
+        clearCache = "번역 캐시 지우기",
+        cacheCleared = "번역 캐시를 지웠습니다",
+        ballSize = "볼 크기",
+        small = "소",
+        medium = "중",
+        large = "대"
     )
 }

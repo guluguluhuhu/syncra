@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +22,17 @@ class PrefsDataStore(private val context: Context) {
     private val NATIVE_LANG_KEY = stringPreferencesKey("native_language_tag")
     private val AUTO_TRANSLATE = booleanPreferencesKey("auto_translate")
     private val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
+    private val BALL_SCALE = floatPreferencesKey("ball_scale")
+
+    /** 悬浮球/角色的大小倍率：0.8 小、1.0 中、1.2 大。 */
+    val ballScale: Flow<Float> = context.dataStore.data
+        .map { preferences -> preferences[BALL_SCALE] ?: 1f }
+
+    suspend fun setBallScale(scale: Float) {
+        context.dataStore.edit { preferences ->
+            preferences[BALL_SCALE] = scale
+        }
+    }
 
     /**
      * 自动翻译总开关：

@@ -135,7 +135,27 @@ class OpenRouterTranslationRepository(
 
     private fun languageName(tag: String): String = LanguageDetector.displayName(tag)
 
+    private class HttpStatusException(val code: Int, message: String) : IOException(message)
+
+    /** 网络错误 / 5xx 自动重试一次；4xx（Key 无效、余额不足、限流）不重试。 */
     private fun post(url: String, body: String, key: String): String {
+        var lastError: Exception? = null
+        repeat(2) { attempt ->
+            try {
+                return postOnce(url, body, key)
+            } catch (e: HttpStatusException) {
+                lastError = e
+                if (e.code in 400..499) throw e
+                if (attempt == 0) Thread.sleep(800)
+            } catch (e: Exception) {
+                lastError = e
+                if (attempt == 0) Thread.sleep(800)
+            }
+        }
+        throw lastError ?: IOException("请求失败")
+    }
+
+    private fun postOnce(url: String, body: String, key: String): String {
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
             conn.requestMethod = "POST"
@@ -144,8 +164,8 @@ class OpenRouterTranslationRepository(
             conn.readTimeout = 60_000
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
             conn.setRequestProperty("Authorization", "Bearer $key")
-            conn.setRequestProperty("HTTP-Referer", "https://github.com/vipin25/bubble-translate")
-            conn.setRequestProperty("X-Title", "BubbleTranslate")
+            conn.setRequestProperty("HTTP-Referer", "https://github.com/guluguluhuhu/syncra")
+            conn.setRequestProperty("X-Title", "Syncra")
 
             conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
 
@@ -153,7 +173,7 @@ class OpenRouterTranslationRepository(
             val stream = if (code in 200..299) conn.inputStream else conn.errorStream
             val raw = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
             if (code !in 200..299) {
-                throw IOException("HTTP $code：${raw.take(300)}")
+                throw HttpStatusException(code, "HTTP $code：${raw.take(300)}")
             }
             return raw
         } finally {
