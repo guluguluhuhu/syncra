@@ -62,7 +62,7 @@ Android 不允许一个 App 读取另一个 App 的界面内容，也不允许�
 - 翻译质量取决于所选模型。
 - 部分 App（Flutter、游戏等自绘界面）不把文字暴露给无障碍，无法翻译。
 - 译文层是覆盖在界面上的悬浮层，不是真正插入 App 内部。
-- Release 包目前用 debug 签名，正式发布前请换成自己的 keystore。
+- Release 包用项目自己的 keystore 签名（`CN=Syncra`）。请妥善保管 keystore 和密码，丢了就无法再发布能覆盖安装的更新。
 
 ## 许可
 

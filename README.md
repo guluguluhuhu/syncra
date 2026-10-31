@@ -61,7 +61,7 @@ Requires JDK 17 and Android SDK 36.
 - Translation quality depends on the selected model.
 - Some apps use custom rendering (Flutter, games) and do not expose text to Accessibility — translation will not work there.
 - The translation layer is an overlay drawn on top of the app; it is not a real in-app insertion.
-- Release builds currently use the debug signing key; replace it with your own keystore before publishing.
+- Release builds are signed with the project keystore (`CN=Syncra`). Keep that keystore and its password safe — without them you cannot ship an update that installs over the existing app.
 
 ## License
 
