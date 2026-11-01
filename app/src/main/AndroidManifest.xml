@@ -14,12 +14,12 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.BubbleTranslate">
+        android:theme="@style/Theme.Syncra">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.BubbleTranslate">
+            android:theme="@style/Theme.Syncra">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -38,18 +38,6 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
-
-        <activity-alias
-            android:name=".ui.CheckLinkActivityAlias"
-            android:targetActivity=".ui.ProcessTextActivity"
-            android:label="Check Link"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.PROCESS_TEXT" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-        </activity-alias>
 
         <service
             android:name=".service.BubbleOverlayService"

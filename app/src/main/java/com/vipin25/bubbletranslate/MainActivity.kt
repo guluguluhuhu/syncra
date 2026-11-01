@@ -30,6 +30,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -63,6 +64,7 @@ import com.vipin25.bubbletranslate.service.TranslationAccessibilityService
 import com.vipin25.bubbletranslate.ui.Strings
 import com.vipin25.bubbletranslate.ui.UiStrings
 import com.vipin25.bubbletranslate.ui.theme.BubbleTranslateTheme
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -80,16 +82,39 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BubbleTranslateTheme {
+            val prefs = remember { PrefsDataStore(applicationContext) }
+            val scope = rememberCoroutineScope()
+            var themeMode by remember { mutableStateOf("system") }
+
+            LaunchedEffect(Unit) {
+                themeMode = prefs.themeMode.first()
+            }
+
+            BubbleTranslateTheme(
+                darkTheme = when (themeMode) {
+                    "dark" -> true
+                    "light" -> false
+                    else -> androidx.compose.foundation.isSystemInDarkTheme()
+                }
+            ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    SetupScreen()
+                    SetupScreen(
+                        themeMode = themeMode,
+                        onThemeChange = { mode ->
+                            themeMode = mode
+                            scope.launch { prefs.setThemeMode(mode) }
+                        }
+                    )
                 }
             }
         }
     }
 
     @Composable
-    private fun SetupScreen() {
+    private fun SetupScreen(
+        themeMode: String,
+        onThemeChange: (String) -> Unit
+    ) {
         val prefs = remember { PrefsDataStore(applicationContext) }
         val scope = rememberCoroutineScope()
 
@@ -110,6 +135,7 @@ class MainActivity : ComponentActivity() {
         var showOnboarding by remember { mutableStateOf(false) }
         var cacheCount by remember { mutableStateOf(0) }
         var ballScale by remember { mutableStateOf(1f) }
+        var inputDelay by remember { mutableStateOf(2) }
 
         val s: UiStrings = remember(nativeLang) { Strings.of(nativeLang) }
 
@@ -158,6 +184,7 @@ class MainActivity : ComponentActivity() {
             TranslationCache.init(applicationContext)
             cacheCount = TranslationCache.size()
             ballScale = prefs.ballScale.first()
+            inputDelay = prefs.inputDelaySec.first()
             loadModels(force = false)
         }
 
@@ -378,6 +405,53 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+            }
+
+            // ── 颜色主题 ──
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "颜色主题",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                listOf(
+                    "system" to "跟随系统",
+                    "light" to "浅色",
+                    "dark" to "深色"
+                ).forEach { (mode, label) ->
+                    TextButton(onClick = { onThemeChange(mode) }) {
+                        Text(
+                            text = label,
+                            fontWeight = if (themeMode == mode) FontWeight.Bold else FontWeight.Normal,
+                            color = if (themeMode == mode) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            // ── 输入后延迟 ──
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "输入后延迟",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text("${inputDelay} 秒", style = MaterialTheme.typography.bodyMedium)
+                }
+                Slider(
+                    value = inputDelay.toFloat(),
+                    onValueChange = { inputDelay = it.roundToInt() },
+                    onValueChangeFinished = {
+                        scope.launch { prefs.setInputDelaySec(inputDelay) }
+                    },
+                    valueRange = 1f..5f,
+                    steps = 3
+                )
             }
 
             Button(

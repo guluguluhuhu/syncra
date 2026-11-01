@@ -154,7 +154,7 @@ class BubbleOverlayService : Service() {
         val channelId = "bubble_service_channel"
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Bubble Translate Service", NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(channelId, "Syncra 翻译服务", NotificationManager.IMPORTANCE_LOW)
             notificationManager.createNotificationChannel(channel)
         }
         val notification = NotificationCompat.Builder(this, channelId)
@@ -420,7 +420,6 @@ class BubbleOverlayService : Service() {
 
     companion object {
         const val ACTION_TRANSLATE = "com.vipin25.bubbletranslate.ACTION_TRANSLATE"
-        const val ACTION_CHECK_LINK = "com.vipin25.bubbletranslate.ACTION_CHECK_LINK"
         const val EXTRA_TEXT = "extra_text"
 
         /** 悬浮球服务是否在跑（供主界面显示「启动/停止」）。 */

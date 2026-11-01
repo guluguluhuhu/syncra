@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,28 @@ class PrefsDataStore(private val context: Context) {
     private val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
     private val BALL_SCALE = floatPreferencesKey("ball_scale")
     private val LOCKED_TARGET = stringPreferencesKey("locked_target_lang")
+    private val THEME_MODE = stringPreferencesKey("theme_mode")
+    private val INPUT_DELAY_SEC = intPreferencesKey("input_delay_sec")
+
+    /** 颜色主题：system / light / dark。 */
+    val themeMode: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[THEME_MODE] ?: "system" }
+
+    suspend fun setThemeMode(mode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[THEME_MODE] = mode
+        }
+    }
+
+    /** 输入框停顿多少秒后自动翻译（1~5）。 */
+    val inputDelaySec: Flow<Int> = context.dataStore.data
+        .map { preferences -> (preferences[INPUT_DELAY_SEC] ?: 2).coerceIn(1, 5) }
+
+    suspend fun setInputDelaySec(sec: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[INPUT_DELAY_SEC] = sec.coerceIn(1, 5)
+        }
+    }
 
     /** 面板里锁定的目标语言；空串 = 自动识别对方语言。 */
     val lockedTargetLang: Flow<String> = context.dataStore.data

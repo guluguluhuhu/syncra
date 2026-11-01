@@ -82,13 +82,13 @@ class TranslationViewModel(
     private var lastWrittenInput = ""
 
     init {
-        // 记住用户选择的「对方语言」；不再直接写死目标语言，方向由每次翻译时判定
+        // 记住用户选择的「对方语言」。
+        // ⚠️ 这里绝不能再用 lastText 触发重翻：DataStore 是整个文件一个 Flow，
+        // 写任何设置（悬浮球大小、锁定语言、API Key…）都会让这个 Flow 重新发射，
+        // 一旦在这里 tryEmit(lastText)，选中的翻译卡片就会反复弹出来、清缓存也没用。
         viewModelScope.launch {
             prefsDataStore?.targetLanguageTag?.collectLatest { tag ->
                 otherPartyLang = tag
-                if (lastText.isNotBlank()) {
-                    textInputFlow.tryEmit(lastText)
-                }
             }
         }
 
@@ -397,7 +397,7 @@ class TranslationViewModel(
         val service = TranslationAccessibilityService.instance
         if (service == null) {
             if (!silent) _uiState.value = TranslationUiState.Error(
-                "无障碍服务没连上。\n去「设置 → 无障碍 → BubbleTranslate」关掉再打开一次。"
+                "无障碍服务没连上。\n去「设置 → 无障碍 → Syncra」关掉再打开一次。"
             )
             return
         }

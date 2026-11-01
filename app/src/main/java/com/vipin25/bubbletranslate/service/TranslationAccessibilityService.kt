@@ -9,6 +9,8 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.vipin25.bubbletranslate.DependencyProvider
 import com.vipin25.bubbletranslate.data.LanguageDetector
 import com.vipin25.bubbletranslate.domain.model.TranslationUiState
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 /** 屏幕上读到的一段文字及其位置。 */
 data class ScreenText(
@@ -38,6 +40,12 @@ class TranslationAccessibilityService : AccessibilityService() {
         // 文本变化事件在 X 这类 Compose 输入框上不可靠，改用轮询兜底
         pollHandler.removeCallbacks(pollRunnable)
         pollHandler.postDelayed(pollRunnable, 1200)
+
+        // 跟随设置里的「输入后延迟」
+        val prefs = com.vipin25.bubbletranslate.data.PrefsDataStore(applicationContext)
+        serviceScope.launch {
+            prefs.inputDelaySec.collect { sec -> inputDelaySec = sec }
+        }
     }
 
     private val pollHandler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -64,8 +72,8 @@ class TranslationAccessibilityService : AccessibilityService() {
                         lastPollAt = now
                     } else if (text.isNotEmpty() &&
                         text == lastPolledText &&
-                        // 停顿 3 秒才写回：1 秒太激进，会打断输入法组合区，导致后面打的字被吞
-                        now - lastPollAt >= 3000 &&
+                        // 停顿时间跟着设置走（1~5 秒，默认 2）
+                        now - lastPollAt >= inputDelaySec * 1000L &&
                         now - lastWriteAt > 1500 &&
                         now >= pollCooldownUntil &&
                         !vm.isInputTranslating()
@@ -90,6 +98,14 @@ class TranslationAccessibilityService : AccessibilityService() {
     /** 键盘当前是否可见 —— 只在「键盘收起」时才自动翻译输入框。 */
     @Volatile
     private var keyboardVisible = false
+
+    /** 输入框停顿多少秒后自动翻译（设置里可调 1~5，默认 2）。 */
+    @Volatile
+    private var inputDelaySec = 2
+
+    private val serviceScope = kotlinx.coroutines.CoroutineScope(
+        kotlinx.coroutines.Dispatchers.Main + kotlinx.coroutines.SupervisorJob()
+    )
 
     /** 上次把译文写回输入框的时间；写回后 1.5 秒内不再自动触发，避免自己触发自己。 */
     @Volatile
@@ -405,6 +421,7 @@ class TranslationAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         pollHandler.removeCallbacks(pollRunnable)
         inputHandler.removeCallbacks(autoInputRunnable)
+        serviceScope.cancel()
         if (instance === this) instance = null
         super.onDestroy()
     }
